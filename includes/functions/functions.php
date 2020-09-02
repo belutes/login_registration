@@ -57,7 +57,17 @@
         }
     }
 
+    // for sending email confirmation
+    function send_email($email, $subject, $msg, $headers){
+        return mail($email, $subject, $msg, $headers);
+    }
+
+    // validates user input in registration form
     function validate_user_registration(){
+        $min = 3;
+        $max = 20;
+        $errors = [];
+        if($_SERVER['REQUEST_METHOD'] == "POST"){
         $first_name = clean($_POST['first_name']);
         $last_name = clean($_POST['last_name']);
         $username = clean($_POST['username']);
@@ -65,8 +75,7 @@
         $password = clean($_POST['password']);
         $confirm_password = clean($_POST['confirm_password']);
 
-        $min = 3;
-        $max = 20;
+        
         if(strlen($first_name)<$min && strlen($first_name) != 0){
             $errors[]= "Your first name cannot be less than {$min} characters";
         }
@@ -105,6 +114,41 @@
             foreach($errors as $error){
                 echo validation_errors($error);
             }
+        }else{
+            if(register_user($first_name, $last_name, $username, $email, $password)){
+            set_message("<p class = bg-success text-center>Please check your email or spam folder for activation</p>");
+            redirect("index.php");
+            }
+            // register_user($first_name, $last_name, $username, $email, $password);
+        }
+    }
+    } // end function validate_user_registration
+
+    function register_user($first_name, $last_name, $username, $email, $password){
+        $first_name = escape($first_name);
+        $last_name = escape($last_name);
+        $username = escape($username);
+        $email = escape($email);
+        $password = escape($password);
+
+        if(email_exists($email)){
+            return false;
+        }else if(username_exists($username)){
+            return false;
+        }else{
+            $password = md5($password);
+            $validation_code = md5($username . microtime());
+            $sql = "INSERT INTO users(first_name, last_name, username, email, password, validation_code, active)";
+            $sql .= " VALUES('$first_name', '$last_name', '$username', '$email', '$password', '$validation_code', 0)";
+            $result = query($sql);
+            confirm($result);
+            $subject = "Activate Account";
+            $msg = "Please click the link below to activate your account
+            http://localhost:3000/activate.php?email=$email&code=$validation_code
+            ";
+            $headers = "From: noreply@yourwebsite.com";
+            send_email($email, $subject, $msg, $headers);
+            return true;
         }
     }
 ?>
