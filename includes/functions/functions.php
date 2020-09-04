@@ -118,11 +118,16 @@
             if(register_user($first_name, $last_name, $username, $email, $password)){
             set_message("<p class = bg-success text-center>Please check your email or spam folder for activation</p>");
             redirect("index.php");
+            }else{
+                set_message("<p class = bg-danger text-center>Sorry, we could not register the user</p>");
+            redirect("index.php");
             }
             // register_user($first_name, $last_name, $username, $email, $password);
         }
     }
     } // end function validate_user_registration
+
+    /*******Register user functions**********/
 
     function register_user($first_name, $last_name, $username, $email, $password){
         $first_name = escape($first_name);
@@ -149,6 +154,27 @@
             $headers = "From: noreply@yourwebsite.com";
             send_email($email, $subject, $msg, $headers);
             return true;
+        }
+    }
+
+    /******Activate user functions*******/
+    function activate_user(){
+    if($_SERVER['REQUEST_METHOD'] == "GET")
+        if(isset($_GET['email'])){
+           echo $email = clean($_GET['email']) . "<br/>";
+           echo $validation_code = clean($_GET['code']);
+           $sql = "SELECT id FROM users WHERE email = '".escape($_GET['email'])."' AND validation_code = '".escape($_GET['code'])."'";
+           $result = query($sql);
+           confirm($result);
+           if (row_count($result) == 1){
+                $sql2 = "UPDATE users SET active = 1, validation_code = 0 WHERE email = '".escape($_GET['email'])."' AND validation_code = '".escape($_GET['code'])."'";
+                $result2 = query($sql2);
+                confirm($result2);
+                set_message("<p class = 'bg-success'>Your account has been activated. Please Log In.</p>");
+                redirect("login.php");
+           }else{
+            set_message("<p class = 'bg-success'>Sorry, Your account cannot be activated. Please Try Again.</p>");
+           }
         }
     }
 ?>
